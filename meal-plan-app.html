@@ -82,6 +82,11 @@
 
   .cheat-btn{width:100%;padding:15px;border-radius:var(--radius);border:1.5px solid rgba(255,69,58,.3);background:rgba(255,69,58,.07);color:var(--red);font-size:15px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
   .cheat-btn:active{transform:scale(.97);background:rgba(255,69,58,.15)}
+  .next-day-btn{width:100%;padding:15px;border-radius:var(--radius);border:1.5px solid rgba(78,205,196,.3);background:rgba(78,205,196,.07);color:var(--him);font-size:15px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;margin-bottom:10px}
+  .next-day-btn:active{transform:scale(.97);background:rgba(78,205,196,.15)}
+  .day-nav-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .prev-day-btn{width:100%;padding:15px;border-radius:var(--radius);border:1.5px solid rgba(255,159,10,.3);background:rgba(255,159,10,.07);color:var(--orange);font-size:15px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+  .prev-day-btn:active{transform:scale(.97);background:rgba(255,159,10,.15)}
   .cheat-log-item{background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border:1px solid rgba(255,69,58,.2);display:flex;align-items:center;gap:12px}
   .cheat-log-icon{font-size:18px;width:34px;height:34px;background:rgba(255,69,58,.1);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .cheat-log-text{font-size:14px;font-weight:600;color:var(--text2);line-height:1.4}
@@ -219,6 +224,10 @@
       <div class="dcb-sub" id="dayCompleteMsg"></div>
     </div>
     <div style="margin-top:20px">
+      <div class="day-nav-row">
+        <button class="prev-day-btn" onclick="prevDay()">⬅️ Prev Day</button>
+        <button class="next-day-btn" onclick="nextDay()">➡️ Next Day</button>
+      </div>
       <button class="cheat-btn" onclick="openCheatModal()">🍕 I Cheated Today</button>
     </div>
     <div id="cheatLogSection"></div>
@@ -290,8 +299,9 @@
 <div class="celebration" id="celebration"><div class="celebration-pill" id="celebrationText">✓ Done!</div></div>
 
 <script>
-// ── START DATE: next Monday ───────────────────────────────────────────────────
-const START_DATE=(()=>{const t=new Date(),d=t.getDay(),m=new Date(t);m.setDate(t.getDate()+(d===1?0:(8-d)%7));m.setHours(0,0,0,0);return m;})();
+// ── START DATE: today ─────────────────────────────────────────────────────────
+const START_DATE=(()=>{const m=new Date();m.setHours(0,0,0,0);return m;})();
+
 
 // ── MEAL PLANS ────────────────────────────────────────────────────────────────
 // Each meal has: title (short), detail (specific quantities)
@@ -437,12 +447,13 @@ let S={
   customItems:[],
   openCats:{},
   activeWeek:'all',
+  dayOffset:0,
 };
 const save=()=>localStorage.setItem('mp28v3',JSON.stringify(S));
 const load=()=>{const s=localStorage.getItem('mp28v3');if(s)try{S=JSON.parse(s);}catch(e){}};
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-const todayPos=()=>{const n=new Date();n.setHours(0,0,0,0);return Math.max(0,Math.min(Math.floor((n-START_DATE)/86400000),S.sequence.length-1));};
+const todayPos=()=>{const n=new Date();n.setHours(0,0,0,0);const base=Math.floor((n-START_DATE)/86400000);return Math.max(0,Math.min(base+(S.dayOffset||0),S.sequence.length-1));};
 const curPlanIdx=()=>S.sequence[todayPos()]??0;
 const activePlan=()=>S.mode==='her'?herPlan:hisPlan;
 const activeCals=()=>S.mode==='her'?herCals:hisCals;
@@ -573,6 +584,8 @@ function toggleMeal(pi,meal){
   render();
 }
 function setMode(m){S.mode=m;save();render();}
+function nextDay(){if(todayPos()<S.sequence.length-1){S.dayOffset=(S.dayOffset||0)+1;save();render();}}
+function prevDay(){if(todayPos()>0){S.dayOffset=(S.dayOffset||0)-1;save();render();}}
 function openCheatModal(){const sp=todayPos(),np=S.sequence.length+1;document.getElementById('cheatModalText').innerHTML=`Marking <span>Day ${sp+1}</span> as a cheat day.<br><br>It moves to <span>Day ${np}</span>. Plan extends to <span>${np} days</span>.`;document.getElementById('cheatModal').classList.add('active');}
 function closeCheatModal(){document.getElementById('cheatModal').classList.remove('active');}
 function confirmCheat(){const sp=todayPos(),pi=S.sequence[sp],np=S.sequence.length+1;['bf','lu','dn'].forEach(m=>delete S.completedMeals[mealKey(pi,m)]);S.sequence.push(pi);S.cheatedDays.push({originalDay:sp+1,movedToPosition:np});save();closeCheatModal();render();}
